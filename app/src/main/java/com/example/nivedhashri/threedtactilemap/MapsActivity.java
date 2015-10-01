@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.location.Address;
 import android.location.Geocoder;
+import android.location.LocationManager;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -28,54 +29,25 @@ import java.util.Locale;
 
 public class MapsActivity extends FragmentActivity implements OnInitListener {
 
-    Button kettle,whereami,file2;
+    Button kettle,whereami,scan;
     InputStream is = null;
-    private GoogleMap mMap; // Might be null if Google Play services APK is not available.
+    private GoogleMap mMap; //Might be null if Google Play services APK is not available.
     MarkerOptions markerOptions;
     LatLng latLng;
     TextToSpeech tt1;
-            Double latitude;
-            Double longitude;
-            float zoom;
-            Locale loc = new Locale("English");
-            private int MY_DATA_CHECK_CODE = 0;
+    LocationManager locationManager;
+    LocationActivity locationActivity;
 
-            @Override
-            protected void onCreate(Bundle savedInstanceState) {
-                super.onCreate(savedInstanceState);
-                setContentView(R.layout.activity_maps);
+    Double latitude;
+    Double longitude;
+    float zoom;
+    Locale loc = new Locale("English");
+    private int MY_DATA_CHECK_CODE = 0;
 
-                //adding a button to connect to kettle
-                kettle = (Button)findViewById(R.id.button);
-                kettle.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        String url = "http://kettle.ubiq.cs.cmu.edu:8080/greeting";
-                        Intent i = new Intent(Intent.ACTION_VIEW);
-                        i.setData(Uri.parse(url));
-                        startActivity(i);
-                    }
-                });
-
-                whereami=(Button)findViewById(R.id.button2);
-                whereami.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-
-                        mMap.setMyLocationEnabled(true);
-                    }
-                });
-
-                file2=(Button)findViewById(R.id.button3);
-                file2.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-
-                }
-            });
-
-        setHomeLocation();
-        setUpMapIfNeeded();
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_maps);
 
         SupportMapFragment supportMapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
         //Getting reference to the map
@@ -88,8 +60,6 @@ public class MapsActivity extends FragmentActivity implements OnInitListener {
                 latLng = arg0;
                 //clearing the previously touched position
                 mMap.clear();
-                //animating to the touched position
-                //mMap.animateCamera(CameraUpdateFactory.newLatLng(latLng));
                 //creating a marker
                 markerOptions = new MarkerOptions();
                 //setting the position for marker
@@ -107,54 +77,57 @@ public class MapsActivity extends FragmentActivity implements OnInitListener {
                 mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(latitude, longitude), zoom));
             }
         });
-        //to check if tts in installed
+
+        //to check if tts in installed(for text to speech conversion)
         Intent checkTTSIntent = new Intent();
         checkTTSIntent.setAction(TextToSpeech.Engine.ACTION_CHECK_TTS_DATA);
         startActivityForResult(checkTTSIntent, MY_DATA_CHECK_CODE);
-    }
 
-    //specking the location
-    private void speakLocation(String Location)
-    {
-        tt1.speak(Location, TextToSpeech.QUEUE_FLUSH, null);
-    }
-
-    //setting the home locaiton when the map is loaded
-    private void setHomeLocation()
-    {
-        //values for setting a constant location when the map is loaded
-        longitude =-79.9425528;
-        latitude =40.4424925;
-        zoom =14.0f;
-    }
-
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-
-        if (requestCode == MY_DATA_CHECK_CODE) {
-            if (resultCode == TextToSpeech.Engine.CHECK_VOICE_DATA_PASS) {
-                //the user has the necessary data - create the TTS
-                tt1 = new TextToSpeech(this,this);
+        //adding a button to connect to kettle
+        kettle = (Button)findViewById(R.id.button);
+        kettle.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String url = "http://kettle.ubiq.cs.cmu.edu:8080/greeting";
+                Intent i = new Intent(Intent.ACTION_VIEW);
+                i.setData(Uri.parse(url));
+                startActivity(i);
             }
-            else {
-                //no data - install it now
-                Intent installTTSIntent = new Intent();
-                installTTSIntent.setAction(TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA);
-                startActivity(installTTSIntent);
+        });
+
+        //button to check to current location
+        whereami=(Button)findViewById(R.id.button2);
+        whereami.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View arg0) {
+                locationActivity = new LocationActivity(MapsActivity.this);
+                if(locationActivity.canGetLocation()) {
+                    double latitude = locationActivity.getLatitude();
+                    double longitude = locationActivity.getLongitude();
+                    //reverse geocoding the latitude & longitude
+                    Geocoder geocoder = new Geocoder(MapsActivity.this, Locale.getDefault());
+                    List<Address> addressList;
+
+                    try {
+                        addressList = geocoder.getFromLocation(latitude, longitude, 2);
+                        if (addressList != null && addressList.size() > 0) {
+                            Address adr = addressList.get(0);
+                            String adrText = String.format("%s %s", adr.getMaxAddressLineIndex() > 0 ? adr.getAddressLine(0) : "", adr.getLocality(), adr.getCountryName(), adr.getCountryCode());
+                            Toast.makeText(getBaseContext(), adrText, Toast.LENGTH_LONG).show();
+                            //speaking the location
+                            speakLocation(adrText);
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+
+                } else {
+                    locationActivity.showSettingsAlert();
+                }
             }
-        }
-    }
-
-    //converting text to speech
-    public void onInit(int initStatus) {
-
-        //check for successful instantiation
-        if (initStatus == TextToSpeech.SUCCESS) {
-            if(tt1.isLanguageAvailable(Locale.US)==TextToSpeech.LANG_AVAILABLE)
-                tt1.setLanguage(Locale.US);
-        }
-        else if (initStatus == TextToSpeech.ERROR) {
-            Toast.makeText(this, "Sorry! Text To Speech failed...", Toast.LENGTH_LONG).show();
-        }
+        });
+        setHomeLocation();
+        setUpMapIfNeeded();
     }
 
     //converting the latitude and longitude to address
@@ -183,9 +156,7 @@ public class MapsActivity extends FragmentActivity implements OnInitListener {
 
             if (addresses != null && addresses.size() > 0) {
                 Address address = addresses.get(0);
-
                 addressText = String.format("%s %s", address.getMaxAddressLineIndex() > 0 ? address.getAddressLine(0) : "","");
-                //splitAdress(addressText);
             }
             return removeNumberFromAddress(addressText);
         }
@@ -196,7 +167,6 @@ public class MapsActivity extends FragmentActivity implements OnInitListener {
             String result;
             int MAXADDRSIZE=150;
             int incrementor=0;
-            char tempCharacter;
             char[] addressCharacterArray;
             char[] resultCharacterArray = new char[MAXADDRSIZE];
             addressCharacterArray=address.toCharArray();
@@ -235,6 +205,50 @@ public class MapsActivity extends FragmentActivity implements OnInitListener {
         }
     }
 
+    //Method called to convert Text to speech
+    private void speakLocation(String Location)
+    {
+        tt1.speak(Location, TextToSpeech.QUEUE_FLUSH, null);
+    }
+
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+
+        if (requestCode == MY_DATA_CHECK_CODE) {
+            if (resultCode == TextToSpeech.Engine.CHECK_VOICE_DATA_PASS) {
+                //the user has the necessary data - create the TTS
+                tt1 = new TextToSpeech(this,this);
+            }
+            else {
+                //no data - install it now
+                Intent installTTSIntent = new Intent();
+                installTTSIntent.setAction(TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA);
+                startActivity(installTTSIntent);
+            }
+        }
+    }
+
+    //converting text to speech
+    public void onInit(int initStatus) {
+
+        //check for successful instantiation
+        if (initStatus == TextToSpeech.SUCCESS) {
+            if(tt1.isLanguageAvailable(Locale.US)==TextToSpeech.LANG_AVAILABLE)
+                tt1.setLanguage(Locale.US);
+        }
+        else if (initStatus == TextToSpeech.ERROR) {
+            Toast.makeText(this, "Sorry! Text To Speech failed...", Toast.LENGTH_LONG).show();
+        }
+    }
+
+    //setting the home locaiton when the map is loaded
+    private void setHomeLocation()
+    {
+        //values for setting a constant location when the map is loaded
+        longitude =-79.9425528;
+        latitude =40.4424925;
+        zoom =14.0f;
+    }
+
     @Override
     protected void onResume() {
         super.onResume();
@@ -255,8 +269,6 @@ public class MapsActivity extends FragmentActivity implements OnInitListener {
     }
 
     private void setUpMap() {
-//      mMap.addMarker(new MarkerOptions().position(new LatLng(0, 0)).title("Marker"));
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(latitude, longitude), zoom));
-//      mMap.
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(-79.9425528, 40.4424925), 14.0f));
     }
 }
