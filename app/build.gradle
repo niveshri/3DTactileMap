@@ -1,13 +1,13 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 22
-    buildToolsVersion "22.0.1"
+    compileSdkVersion 21
+    buildToolsVersion "21.1.2"
 
     defaultConfig {
         applicationId "com.example.nivedhashri.threedtactilemap"
         minSdkVersion 15
-        targetSdkVersion 22
+        targetSdkVersion 21
         versionCode 1
         versionName "1.0"
     }
@@ -21,10 +21,11 @@ android {
 
 dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
-    compile 'com.android.support:appcompat-v7:22.2.0'
+    compile 'com.android.support:appcompat-v7:21.0.3'
     compile 'com.google.android.gms:play-services:7.5.0'
     compile project(':android-google-maps-api11')
     compile 'org.apache.httpcomponents:httpclient:4.5.1'
     compile 'org.apache.httpcomponents:httpcomponents-core:4.4.3'
     compile 'org.apache.httpcomponents:httpcomponents-client:4.5.1'
+    compile files('libs/zbar.jar')
 }
