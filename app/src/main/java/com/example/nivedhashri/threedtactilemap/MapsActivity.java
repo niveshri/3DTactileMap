@@ -1,11 +1,9 @@
 package com.example.nivedhashri.threedtactilemap;
 
-import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.location.Address;
 import android.location.Geocoder;
-import android.location.LocationManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.speech.tts.TextToSpeech;
@@ -24,7 +22,6 @@ import com.google.android.gms.maps.model.MarkerOptions;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -33,19 +30,21 @@ import java.util.Locale;
 
 public class MapsActivity extends FragmentActivity implements OnInitListener {
 
-    Button kettle,whereami,scan;
-    InputStream is = null;
+    Button kettle,whereami;
     private GoogleMap mMap; //Might be null if Google Play services APK is not available.
     MarkerOptions markerOptions;
     LatLng latLng;
     TextToSpeech tt1;
-    LocationManager locationManager;
     LocationActivity locationActivity;
 
     Double latitude;
     Double longitude;
+    String latFromDynFile = "";
+    String lngFromDynFile = "";
+    String zoomFromDynFile = "";
     String latFromFile = "";
     String lngFromFile = "";
+    String zoomFromFile = "";
     float zoom;
     Locale loc = new Locale("English");
     private int MY_DATA_CHECK_CODE = 0;
@@ -90,44 +89,42 @@ public class MapsActivity extends FragmentActivity implements OnInitListener {
             public void onClick(View v) {
                 new Thread(new Runnable() {
                     @Override
-                        public void run() {
+                    public void run() {
 
-                            URL url = null;
-                            try {
-                                url = new URL("http://kettle.ubiq.cs.cmu.edu/~nivedha/sample.txt");
-                            } catch (MalformedURLException e) {
-                                e.printStackTrace();
-                            }
-
-                            try {
-                                BufferedReader br = new BufferedReader(new InputStreamReader(url.openStream()));
-                                String line;
-
-                                if ((line = br.readLine()) != null) {
-                                    latFromFile = line;
-                                }
-                                if ((line = br.readLine()) != null) {
-                                    lngFromFile = line;
-                                }
-                                br.close();
-                                Log.e("latfrom file"+latFromFile,"longfromfile"+lngFromFile);
-                            } catch (IOException e) {
-                                 //You'll need to add proper error handling here
-                            }
+                        URL url = null;
+                        try {
+                            url = new URL("http://kettle.ubiq.cs.cmu.edu/~nivedha/sample.txt");
+                        } catch (MalformedURLException e) {
+                            e.printStackTrace();
                         }
-                    }).start();
-                ProgressDialog progress = new ProgressDialog(MapsActivity.this);
-                progress.setTitle("Loading");
-                progress.setMessage("Wait while loading...");
-                progress.show();
-                    setLocationFromKettle(latFromFile,lngFromFile);
-                // To dismiss the dialog
-                progress.dismiss();
-                    setHomeLocation();
-                    setUpMapIfNeeded();
-                }
+
+                        try {
+                            BufferedReader br = new BufferedReader(new InputStreamReader(url.openStream()));
+                            String line;
+
+                            if ((line = br.readLine()) != null) {
+                                latFromFile = line;
+                            }
+                            if ((line = br.readLine()) != null) {
+                                lngFromFile = line;
+                            }
+                            if ((line = br.readLine()) != null) {
+                                zoomFromFile = line;
+                            }
+                            br.close();
+                            Log.e("Latitude from File: " + latFromFile, "latFromFile");
+                            Log.e("Longitude from File: " + lngFromFile, "lngFromFile");
+                            Log.e("Zoom from File: " + zoomFromFile, "zoomFromFile");
+                        } catch (IOException e) {
+                            //You'll need to add proper error handling here
+                        }
+                    }
+                }).start();
+                setLocationFromKettle(latFromFile, lngFromFile, zoomFromFile);
+                setHomeLocation();
+                setUpMapIfNeeded();
             }
-        );
+        });
 
         //button to check to current location
         whereami=(Button)findViewById(R.id.button2);
@@ -167,14 +164,58 @@ public class MapsActivity extends FragmentActivity implements OnInitListener {
                 }
             }
         });
+
+        Thread newThread =  new Thread(new Runnable() {
+            @Override
+            public void run() {
+
+                String barcodeResult = ScannerActivity.scanResult;
+                String path = "http://kettle.ubiq.cs.cmu.edu/~nivedha/"+barcodeResult+".txt";
+                URL url = null;
+                try {
+                    url = new URL(path);
+                } catch (MalformedURLException e) {
+                    e.printStackTrace();
+                }
+                try {
+                    BufferedReader br = new BufferedReader(new InputStreamReader(url.openStream()));
+                    String line;
+
+                    if ((line = br.readLine()) != null) {
+                        latFromDynFile = line;
+                    }
+                    if ((line = br.readLine()) != null) {
+                        lngFromDynFile = line;
+                    }
+                    if ((line = br.readLine()) != null) {
+                        zoomFromDynFile = line;
+                    }
+                    br.close();
+                    Log.e("Latitude from File: " + latFromDynFile, "latFromDynFile");
+                    Log.e("Longitude from File: " + lngFromDynFile, "lngFromDynFile");
+                    Log.e("Zoom from File: " + zoomFromDynFile, "zoomFromDynFile");
+                } catch (IOException e) {
+                    //You'll need to add proper error handling here
+                }
+            }
+        });
+        newThread.start();
+        while (newThread.isAlive())
+        {
+            setLocationFromKettle(latFromDynFile, lngFromDynFile, zoomFromDynFile);
+        }
+//        setLocationFromKettle(latFromDynFile, lngFromDynFile);
+//        setHomeLocation();
+//        setUpMapIfNeeded();
     }
 
-    protected void setLocationFromKettle(String latFromFile,String lngFromFile)
+    protected void setLocationFromKettle(String latFromFile,String lngFromFile, String zoomFromFile)
     {
         try{
             double latitudeFromKettleDouble = Double.parseDouble(latFromFile);
             double longitudeFromKettleDouble = Double.parseDouble(lngFromFile);
-            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(latitudeFromKettleDouble, longitudeFromKettleDouble), zoom));
+            float zoomFromKettleFloat = Float.parseFloat(zoomFromFile);
+            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(latitudeFromKettleDouble, longitudeFromKettleDouble), zoomFromKettleFloat));
         }catch (NumberFormatException e) {
             System.err.println("illegal input");
         }
@@ -216,10 +257,7 @@ public class MapsActivity extends FragmentActivity implements OnInitListener {
         protected String removeNumberFromAddress(String address)
         {
             String result;
-            int MAXADDRSIZE=150;
-            int incrementor=0;
             char[] addressCharacterArray;
-            char[] resultCharacterArray = new char[MAXADDRSIZE];
             addressCharacterArray=address.toCharArray();
             for (int i=0;i<address.length();i++) {
 
@@ -246,7 +284,6 @@ public class MapsActivity extends FragmentActivity implements OnInitListener {
         //this part is executed after getting the tapped location and converting text to speech
         @Override
         protected void onPostExecute(String second) {
-
             // Setting the title for the marker. This will be displayed on taping the marker
             markerOptions.title(second);
             //splitting the text to retrieve the road name
