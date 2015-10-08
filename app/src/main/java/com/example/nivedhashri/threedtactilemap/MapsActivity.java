@@ -37,15 +37,15 @@ public class MapsActivity extends FragmentActivity implements OnInitListener {
     TextToSpeech tt1;
     LocationActivity locationActivity;
 
-    Double latitude;
-    Double longitude;
-    String latFromDynFile = "";
-    String lngFromDynFile = "";
-    String zoomFromDynFile = "";
-    String latFromFile = "";
-    String lngFromFile = "";
-    String zoomFromFile = "";
-    float zoom;
+    Double latitude; //to set the home location of the map -> setHomeLocation();
+    Double longitude;//to set the home location of the map -> setHomeLocation();
+    float zoom;//to set the home location of the map -> setHomeLocation();
+    String latFromBarcode = ""; //latitude value is stored when the file is accessed using the barcode
+    String lngFromBarcode = ""; //longitude value is stored when the file is accessed using the barcode
+    String zoomFromBarcode = ""; //zoom value is stored when the file is access using the barcode
+    String latFromServer = ""; //latitude value is stored when the "kettle" button is clicked
+    String lngFromServer = ""; //longitude value is stored when the "kettle" button is clicked
+    String zoomFromServer = ""; //zoom value is stored when the "kettle" button is clicked
     Locale loc = new Locale("English");
     private int MY_DATA_CHECK_CODE = 0;
 
@@ -93,34 +93,42 @@ public class MapsActivity extends FragmentActivity implements OnInitListener {
 
                         URL url = null;
                         try {
+                            //connecting to server for fetching the latitude and longitude values to load the map
                             url = new URL("http://kettle.ubiq.cs.cmu.edu/~nivedha/sample.txt");
                         } catch (MalformedURLException e) {
                             e.printStackTrace();
                         }
 
                         try {
+                            //reading the values from the file
                             BufferedReader br = new BufferedReader(new InputStreamReader(url.openStream()));
                             String line;
 
+                            //latitude value
                             if ((line = br.readLine()) != null) {
-                                latFromFile = line;
+                                latFromServer = line;
                             }
+
+                            //longitude value
                             if ((line = br.readLine()) != null) {
-                                lngFromFile = line;
+                                lngFromServer = line;
                             }
+
+                            //zoom value
                             if ((line = br.readLine()) != null) {
-                                zoomFromFile = line;
+                                zoomFromServer = line;
                             }
                             br.close();
-                            Log.e("Latitude from File: " + latFromFile, "latFromFile");
-                            Log.e("Longitude from File: " + lngFromFile, "lngFromFile");
-                            Log.e("Zoom from File: " + zoomFromFile, "zoomFromFile");
+                            //printing the lat, long and zoom values to check if it is read properly
+                            Log.e("Latitude from File: " + latFromServer, "latFromServer");
+                            Log.e("Longitude from File: " + lngFromServer, "lngFromServer");
+                            Log.e("Zoom from File: " + zoomFromServer, "zoomFromServer");
                         } catch (IOException e) {
                             //You'll need to add proper error handling here
                         }
                     }
                 }).start();
-                setLocationFromKettle(latFromFile, lngFromFile, zoomFromFile);
+                setLocationFromServer(latFromServer, lngFromServer, zoomFromServer);
                 setHomeLocation();
                 setUpMapIfNeeded();
             }
@@ -169,7 +177,9 @@ public class MapsActivity extends FragmentActivity implements OnInitListener {
         scan.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-               finish();
+                //This function is used to close the current activity and restore the next activity or previous activity.
+                //In this case it proceeds to the previous activity -> ScannerActivity.java -> which shows the barcode scanning
+                finish();
             }
         });
 
@@ -177,6 +187,7 @@ public class MapsActivity extends FragmentActivity implements OnInitListener {
             @Override
             public void run() {
 
+                //storing the result of the barcode activity
                 String barcodeResult = ScannerActivity.scanResult;
                 String path = "http://kettle.ubiq.cs.cmu.edu/~nivedha/"+barcodeResult+".txt";
                 URL url = null;
@@ -190,18 +201,18 @@ public class MapsActivity extends FragmentActivity implements OnInitListener {
                     String line;
 
                     if ((line = br.readLine()) != null) {
-                        latFromDynFile = line;
+                        latFromBarcode = line;
                     }
                     if ((line = br.readLine()) != null) {
-                        lngFromDynFile = line;
+                        lngFromBarcode = line;
                     }
                     if ((line = br.readLine()) != null) {
-                        zoomFromDynFile = line;
+                        zoomFromBarcode = line;
                     }
                     br.close();
-                    Log.e("Latitude from File: " + latFromDynFile, "latFromDynFile");
-                    Log.e("Longitude from File: " + lngFromDynFile, "lngFromDynFile");
-                    Log.e("Zoom from File: " + zoomFromDynFile, "zoomFromDynFile");
+                    Log.e("Latitude from File: " + latFromBarcode, "latFromBarcode");
+                    Log.e("Longitude from File: " + lngFromBarcode, "lngFromBarcode");
+                    Log.e("Zoom from File: " + zoomFromBarcode, "zoomFromBarcode");
                 } catch (IOException e) {
                     //You'll need to add proper error handling here
                 }
@@ -210,20 +221,18 @@ public class MapsActivity extends FragmentActivity implements OnInitListener {
         newThread.start();
         while (newThread.isAlive())
         {
-            setLocationFromKettle(latFromDynFile, lngFromDynFile, zoomFromDynFile);
+            setLocationFromServer(latFromBarcode, lngFromBarcode, zoomFromBarcode);
         }
-//        setLocationFromKettle(latFromDynFile, lngFromDynFile);
-//        setHomeLocation();
-//        setUpMapIfNeeded();
     }
 
-    protected void setLocationFromKettle(String latFromFile,String lngFromFile, String zoomFromFile)
+    //new map is loaded using this function when a file accessed from a server
+    protected void setLocationFromServer(String latFromFile, String lngFromFile, String zoomFromFile)
     {
         try{
-            double latitudeFromKettleDouble = Double.parseDouble(latFromFile);
-            double longitudeFromKettleDouble = Double.parseDouble(lngFromFile);
-            float zoomFromKettleFloat = Float.parseFloat(zoomFromFile);
-            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(latitudeFromKettleDouble, longitudeFromKettleDouble), zoomFromKettleFloat));
+            double latitudeFromServerDouble = Double.parseDouble(latFromFile);
+            double longitudeFromServerDouble = Double.parseDouble(lngFromFile);
+            float zoomFromServerFloat = Float.parseFloat(zoomFromFile);
+            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(latitudeFromServerDouble, longitudeFromServerDouble), zoomFromServerFloat));
         }catch (NumberFormatException e) {
             System.err.println("illegal input");
         }
