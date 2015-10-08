@@ -30,7 +30,7 @@ import java.util.Locale;
 
 public class MapsActivity extends FragmentActivity implements OnInitListener {
 
-    Button kettle,whereami;
+    Button kettle,whereami,scan;
     private GoogleMap mMap; //Might be null if Google Play services APK is not available.
     MarkerOptions markerOptions;
     LatLng latLng;
@@ -83,7 +83,7 @@ public class MapsActivity extends FragmentActivity implements OnInitListener {
         startActivityForResult(checkTTSIntent, MY_DATA_CHECK_CODE);
 
         //adding a button to connect to kettle
-        kettle = (Button)findViewById(R.id.button);
+        kettle = (Button)findViewById(R.id.btnKettle);
         kettle.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -127,7 +127,7 @@ public class MapsActivity extends FragmentActivity implements OnInitListener {
         });
 
         //button to check to current location
-        whereami=(Button)findViewById(R.id.button2);
+        whereami=(Button)findViewById(R.id.btnWhereami);
         whereami.setOnClickListener(new View.OnClickListener() {
 
             @Override
@@ -162,6 +162,14 @@ public class MapsActivity extends FragmentActivity implements OnInitListener {
                 } else {
                     locationActivity.showSettingsAlert();
                 }
+            }
+        });
+
+        scan = (Button)findViewById(R.id.btnScan);
+        scan.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+               finish();
             }
         });
 
