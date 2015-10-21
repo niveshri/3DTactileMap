@@ -16,6 +16,7 @@ import android.widget.Toast;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 
@@ -72,6 +73,12 @@ public class MapsActivity extends FragmentActivity implements OnInitListener {
             }
         });
 
+        mMap.setOnCameraChangeListener(new GoogleMap.OnCameraChangeListener() {
+            @Override
+            public void onCameraChange(CameraPosition cameraPosition) {
+                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(latitude, longitude), zoom));
+            }
+        });
         //to check if tts in installed(for text to speech conversion)
         Intent checkTTSIntent = new Intent();
         checkTTSIntent.setAction(TextToSpeech.Engine.ACTION_CHECK_TTS_DATA);
@@ -128,7 +135,7 @@ public class MapsActivity extends FragmentActivity implements OnInitListener {
                 zoomFromServer="14.0";
 
                 setLocationFromServer(latFromServer, lngFromServer, zoomFromServer);
-                setHomeLocation();
+            //    setHomeLocation();
                 setUpMapIfNeeded();
 
                 return false;
@@ -239,7 +246,10 @@ public class MapsActivity extends FragmentActivity implements OnInitListener {
         try{
             double latitudeFromServerDouble = Double.parseDouble(latFromFile);
             double longitudeFromServerDouble = Double.parseDouble(lngFromFile);
+            latitude=latitudeFromServerDouble;
+            longitude=longitudeFromServerDouble;
             float zoomFromServerFloat = Float.parseFloat(zoomFromFile);
+            zoom=zoomFromServerFloat;
             mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(latitudeFromServerDouble, longitudeFromServerDouble), zoomFromServerFloat));
         }catch (NumberFormatException e) {
             System.err.println("illegal input");
@@ -355,13 +365,13 @@ public class MapsActivity extends FragmentActivity implements OnInitListener {
     }
 
     //setting the home locaiton when the map is loaded
-    private void setHomeLocation()
+   /* private void setHomeLocation()
     {
         //values for setting a constant location when the map is loaded
         longitude =-79.9425528;
         latitude =40.4424925;
         zoom =14.0f;
-    }
+    } */
 
     @Override
     protected void onResume() {
