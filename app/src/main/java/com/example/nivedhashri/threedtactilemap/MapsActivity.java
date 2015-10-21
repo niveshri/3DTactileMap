@@ -9,7 +9,6 @@ import android.os.Bundle;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.TextToSpeech.OnInitListener;
 import android.support.v4.app.FragmentActivity;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
@@ -20,11 +19,7 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.List;
 import java.util.Locale;
 
@@ -84,10 +79,10 @@ public class MapsActivity extends FragmentActivity implements OnInitListener {
 
         //adding a button to connect to kettle
         kettle = (Button)findViewById(R.id.btnKettle);
-        kettle.setOnClickListener(new View.OnClickListener() {
+        kettle.setOnLongClickListener(new View.OnLongClickListener() {
             @Override
-            public void onClick(View v) {
-                new Thread(new Runnable() {
+            public boolean onLongClick(View v) {
+            /*    new Thread(new Runnable() {
                     @Override
                     public void run() {
 
@@ -127,19 +122,25 @@ public class MapsActivity extends FragmentActivity implements OnInitListener {
                             //You'll need to add proper error handling here
                         }
                     }
-                }).start();
+                }).start(); */
+                latFromServer="11.0513755";
+                lngFromServer="76.9837693";
+                zoomFromServer="14.0";
+
                 setLocationFromServer(latFromServer, lngFromServer, zoomFromServer);
                 setHomeLocation();
                 setUpMapIfNeeded();
+
+                return false;
             }
         });
 
         //button to check to current location
         whereami=(Button)findViewById(R.id.btnWhereami);
-        whereami.setOnClickListener(new View.OnClickListener() {
+        whereami.setOnLongClickListener(new View.OnLongClickListener() {
 
             @Override
-            public void onClick(View arg0) {
+            public boolean onLongClick(View arg0) {
 
                 locationActivity = new LocationActivity(MapsActivity.this);
 
@@ -170,16 +171,18 @@ public class MapsActivity extends FragmentActivity implements OnInitListener {
                 } else {
                     locationActivity.showSettingsAlert();
                 }
+                return false;
             }
         });
 
         scan = (Button)findViewById(R.id.btnScan);
-        scan.setOnClickListener(new View.OnClickListener() {
+        scan.setOnLongClickListener(new View.OnLongClickListener() {
             @Override
-            public void onClick(View v) {
+            public boolean onLongClick(View v) {
                 //This function is used to close the current activity and restore the next activity or previous activity.
                 //In this case it proceeds to the previous activity -> ScannerActivity.java -> which shows the barcode scanning
                 finish();
+                return false;
             }
         });
 
@@ -187,8 +190,13 @@ public class MapsActivity extends FragmentActivity implements OnInitListener {
             @Override
             public void run() {
 
+                latFromBarcode="40.4214015";
+                lngFromBarcode="-79.9760383";
+                zoomFromBarcode="14.0";
+
+
                 //storing the result of the barcode activity
-                String barcodeResult = ScannerActivity.scanResult;
+            /*    String barcodeResult = ScannerActivity.scanResult;
                 String path = "http://kettle.ubiq.cs.cmu.edu/~nivedha/"+barcodeResult+".txt";
                 URL url = null;
                 try {
@@ -215,7 +223,7 @@ public class MapsActivity extends FragmentActivity implements OnInitListener {
                     Log.e("Zoom from File: " + zoomFromBarcode, "zoomFromBarcode");
                 } catch (IOException e) {
                     //You'll need to add proper error handling here
-                }
+                } */
             }
         });
         newThread.start();
