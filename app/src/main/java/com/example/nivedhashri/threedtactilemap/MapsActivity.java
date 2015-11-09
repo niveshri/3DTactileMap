@@ -1,5 +1,6 @@
 package com.example.nivedhashri.threedtactilemap;
 
+import android.app.ActionBar;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
@@ -15,6 +16,7 @@ import android.util.Log;
 import android.util.TypedValue;
 import android.view.View;
 import android.widget.Button;
+import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -42,7 +44,11 @@ public class MapsActivity extends FragmentActivity implements OnInitListener {
     LatLng latLng;
     TextToSpeech tt1;
     LocationActivity locationActivity;
-    int MAX_BUTTONS = 50;
+    int MAX_BUTTONS = 10;
+    long mapNumber = 1;
+    final static long ONE = 1;
+    final static long TWO = 2;
+    final static long THREE = 3;
 
     Double latitude = 0.0; //to set the home location of the map -> setHomeLocation();
     Double longitude = 0.0;//to set the home location of the map -> setHomeLocation();
@@ -163,14 +169,15 @@ public class MapsActivity extends FragmentActivity implements OnInitListener {
                         }
                     }
                 }).start(); */
+
                 latFromServer = "38.7257";
                 lngFromServer = "-9.14855";
                 zoomFromServer = "14.9";
-
                 setLocationFromServer(latFromServer, lngFromServer, zoomFromServer);
-                //    setHomeLocation();
-                setUpMapIfNeeded();
 
+                setUpMapIfNeeded();
+                int temp = 1;
+                new ButtonDataRetrievalTask(temp).execute();
                 return false;
             }
         });
@@ -182,6 +189,7 @@ public class MapsActivity extends FragmentActivity implements OnInitListener {
             @Override
             public boolean onLongClick(View arg0) {
 
+                /*
                 locationActivity = new LocationActivity(MapsActivity.this);
 
                 if (locationActivity.canGetLocation()) {
@@ -211,6 +219,16 @@ public class MapsActivity extends FragmentActivity implements OnInitListener {
                 } else {
                     locationActivity.showSettingsAlert();
                 }
+                */
+                latFromServer = "38.7275";
+                lngFromServer = "-9.1504";
+                zoomFromServer = "15.6";
+
+                setLocationFromServer(latFromServer, lngFromServer, zoomFromServer);
+                setUpMapIfNeeded();
+
+                int temp = 2;
+                new ButtonDataRetrievalTask(temp).execute();
                 return false;
             }
         });
@@ -222,7 +240,18 @@ public class MapsActivity extends FragmentActivity implements OnInitListener {
             public boolean onLongClick(View v) {
                 //This function is used to close the current activity and restore the next activity or previous activity.
                 //In this case it proceeds to the previous activity -> ScannerActivity.java -> which shows the barcode scanning
+                /*
                 finish();
+                 */
+
+                latFromServer = "40.45165";
+                lngFromServer = "-79.9327";
+                zoomFromServer = "15.5";
+
+                setLocationFromServer(latFromServer, lngFromServer, zoomFromServer);
+                setUpMapIfNeeded();
+                int temp = 3;
+                new ButtonDataRetrievalTask(temp).execute();
                 return false;
             }
         });
@@ -231,12 +260,29 @@ public class MapsActivity extends FragmentActivity implements OnInitListener {
             @Override
             public void run() {
 
-                String barcodeResult = ScannerActivity.scanResult;
+                Long barcodeResult = Long.parseLong(ScannerActivity.scanResult);
                 //We could make a switch case out of the barcodeResult to make sure different values are taken for different scan results.
                 //If we also update the URL_BUTTON_DETAILS_FILENAME with the barcodeResult then we can access the buttons of the specific file.
-                latFromBarcode="40.4214015";
-                lngFromBarcode="-79.9760383";
-                zoomFromBarcode="14.0";
+                if(barcodeResult==ONE) {
+                    latFromBarcode = "38.7257";
+                    lngFromBarcode = "-9.14855";
+                    zoomFromBarcode = "14.9";
+                }
+                else if(barcodeResult==TWO) {
+                    latFromBarcode = "38.7275";
+                    lngFromBarcode = "-9.1504";
+                    zoomFromBarcode = "15.6";
+                }
+                else if(barcodeResult==THREE) {
+                    latFromBarcode = "40.45165";
+                    lngFromBarcode = "-79.9327";
+                    zoomFromBarcode = "15.5";
+                }
+                else {
+                    latFromBarcode = "0.0";
+                    lngFromBarcode = "0.0";
+                    zoomFromBarcode = "1";
+                }
 
                 //storing the result of the barcode activity
             /*    String barcodeResult = ScannerActivity.scanResult;
@@ -276,163 +322,116 @@ public class MapsActivity extends FragmentActivity implements OnInitListener {
         }
 
         //Starts to get the button details from the server
-        new ButtonDataRetrievalTask().execute();
-    }
+        new ButtonDataRetrievalTask(Long.parseLong(ScannerActivity.scanResult)).execute();
+        //new ButtonDataRetrievalTask(4).execute();
 
-    //setup buttons over the map
-    protected void setupButtons(){
-        //Insert code here to fetch the details of the from a file and store it in the arrays buttonValue,buttonXCoordinates,buttonYCoordinates
-        //Also setup buttonCount to the number of buttons to be added
-
-        //This code calls kettle and gets the file for Interested Places
-        Thread buttonSetupThread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-
-                URL url = null;
-                try {
-                    //connecting to server for fetching the Interested Places Coordinates to load the map
-                    url = new URL(URL_SERVER_BUTTON_DETAILS_PREFIX + URL_SERVER_BUTTON_DETAILS_FILENAME);
-                } catch (MalformedURLException e) {
-                    e.printStackTrace();
-                }
-
-                try {
-                    //reading the values from the file
-                    BufferedReader br = new BufferedReader(new InputStreamReader(url.openStream()));
-                    String line;
-                    String[] parts = new String[3];
-                    int iterator;
-
-                    //Read the line and loop only if a line is present.
-                    for (iterator = 0; (line = br.readLine()) != null ; iterator++) {
-                        Log.e("Line from Server:",line);
-                        //Check if the line contains a comma ','
-                        if (line.contains(",")) {
-                            //Split the line and store it in a String Array
-                            parts = line.split("[,]");
-                            //Check if there are 3 strings after splitting
-                            if(parts.length==3) {
-                                //Assign the Value, X coordinate and Y coordinate respectively using iterator
-                                buttonValue[iterator] = parts[0];
-                                buttonXCoordinates[iterator] = Float.parseFloat(parts[1]);
-                                buttonYCoordinates[iterator] = Float.parseFloat(parts[2]);
-                            }
-                        }
-                    }
-                    //Now the iterator value should be the number of buttons to be set
-                    buttonCount=iterator;
-
-                    br.close();
-                    //printing the last values to check if it is read properly
-                    Log.e("Name: ", ""+buttonValue[buttonCount-1]);
-                    Log.e("X Coordinate: ", String.valueOf(buttonXCoordinates[buttonCount - 1]));
-                    Log.e("Y Coordinate: ", String.valueOf(buttonYCoordinates[buttonCount - 1]));
-                } catch (IOException e) {
-                    //You'll need to add proper error handling here
-                }
-            }
-        });
-        buttonSetupThread.start();
-        while(buttonSetupThread.isAlive()) {
-
-            //==============================
-        /* //This is hard coded
-        buttonValue[0]="San Liboa Hotel";
-        buttonXCoordinates[0]= (float) 35.3708609272;
-        buttonYCoordinates[0]= (float) 46.2222222222;
-        buttonValue[1]="Hospital Miguel Bombarda";
-        buttonXCoordinates[1]= (float) 65.1927152318;
-        buttonYCoordinates[1]= (float) 37.9;
-        buttonValue[2]="Parque Eduardo VII";
-        buttonXCoordinates[2]= (float) 16.7026490066;
-        buttonYCoordinates[2]= (float) 50.6388888889;
-        buttonValue[3]="Subway - Parque (Blue)";
-        buttonXCoordinates[3]= (float) 26.7993377483;
-        buttonYCoordinates[3]= (float) 60.4055555555;
-        buttonValue[4]="Subway - Picoas";
-        buttonXCoordinates[4]= (float) 44.9529801325;
-        buttonYCoordinates[4]= (float) 62.6333333333;
-        buttonValue[5]="Subway - Avenida";
-        buttonXCoordinates[5]= (float) 47.6880794702;
-        buttonYCoordinates[5]= (float) 3.76666666667;
-        buttonValue[6]="Subway - Rato";
-        buttonXCoordinates[6]= (float) 9.58675496688;
-        buttonYCoordinates[6]= (float) 6.40555555557;
-        buttonValue[7]="Subway - Marques de Pombal";
-        buttonXCoordinates[7]= (float) 24.9079470199;
-        buttonYCoordinates[7]= (float) 32.9666666666;
-        buttonCount = 8;
-        //==============================
+        /*
+        Button tempButton = (Button) findViewById(R.id.button1);
+        float buttonX = 160;
+        float buttonY = 160;
+        tempButton.setX((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, buttonX, getResources().getDisplayMetrics()));
+        tempButton.setY((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, buttonY, getResources().getDisplayMetrics()));
+        tempButton.setVisibility(View.VISIBLE);
+        tempButton.setEnabled(true);
+        tempButton.setOnClickListener(buttonHandler);
         */
-            if (buttonCount > 0 && buttonIDs.length >= buttonCount) {
-                for (int i = 0; i < buttonCount; i++) {
-                    Button tempButton = (Button) findViewById(buttonIDs[i]);
-                    buttonXCoordinates[i] = (buttonXCoordinates[i] / 70) * 320;
-                    buttonYCoordinates[i] = (buttonYCoordinates[i] / 70) * 320;
-                    tempButton.setX((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, buttonXCoordinates[i], getResources().getDisplayMetrics()));
-                    tempButton.setY((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, -buttonYCoordinates[i], getResources().getDisplayMetrics()));
-                    tempButton.setText(buttonValue[i]);
-                    tempButton.setTextSize(ZERO);
-                    tempButton.setVisibility(View.VISIBLE);
-                    tempButton.setEnabled(true);
-                    //tempButton.setBackgroundColor(Color.TRANSPARENT);
-                    tempButton.setOnClickListener(buttonHandler);
-                    Log.e("Name: ", "" + buttonValue[i]);
-                    Log.e("X Coordinate: ", String.valueOf(buttonXCoordinates[i]));
-                    Log.e("Y Coordinate: ", String.valueOf(buttonYCoordinates[i]));
-                }
-            } else {
-                if(buttonCount == 0)
-                {
-                    Log.e("Number of buttons", String.valueOf(buttonCount));
-                }
-                Log.e("Places count exceeds", "Interested Places count exceeds number of buttons present in screen");
-            }
-        //The following Closing Braces and break are for the while(buttonSetupThread) check. Remove it while using hardcoded values.
-            break;
-        }
     }
 
     //This class is used to run the Async Task of getting the details of the buttons to be displayed and after it is done, it does the setting up of buttons
     private class ButtonDataRetrievalTask extends AsyncTask<Void, Void, String>
     {
-        public ButtonDataRetrievalTask()
+        public ButtonDataRetrievalTask(long mapNumberParam)
         {
             super();
-            //==============================
-        /* //This is hard coded
-        buttonValue[0]="San Liboa Hotel";
-        buttonXCoordinates[0]= (float) 35.3708609272;
-        buttonYCoordinates[0]= (float) 46.2222222222;
-        buttonValue[1]="Hospital Miguel Bombarda";
-        buttonXCoordinates[1]= (float) 65.1927152318;
-        buttonYCoordinates[1]= (float) 37.9;
-        buttonValue[2]="Parque Eduardo VII";
-        buttonXCoordinates[2]= (float) 16.7026490066;
-        buttonYCoordinates[2]= (float) 50.6388888889;
-        buttonValue[3]="Subway - Parque (Blue)";
-        buttonXCoordinates[3]= (float) 26.7993377483;
-        buttonYCoordinates[3]= (float) 60.4055555555;
-        buttonValue[4]="Subway - Picoas";
-        buttonXCoordinates[4]= (float) 44.9529801325;
-        buttonYCoordinates[4]= (float) 62.6333333333;
-        buttonValue[5]="Subway - Avenida";
-        buttonXCoordinates[5]= (float) 47.6880794702;
-        buttonYCoordinates[5]= (float) 3.76666666667;
-        buttonValue[6]="Subway - Rato";
-        buttonXCoordinates[6]= (float) 9.58675496688;
-        buttonYCoordinates[6]= (float) 6.40555555557;
-        buttonValue[7]="Subway - Marques de Pombal";
-        buttonXCoordinates[7]= (float) 24.9079470199;
-        buttonYCoordinates[7]= (float) 32.9666666666;
-        buttonCount = 8;
-        //==============================
-        */
+            mapNumber = mapNumberParam;
+
+
+            //Resetting buttons
+            for (int i = 0; i < MAX_BUTTONS; i++) {
+                Button tempButton = (Button) findViewById(buttonIDs[i]);
+                tempButton.setX((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 0, getResources().getDisplayMetrics()));
+                tempButton.setY((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 0, getResources().getDisplayMetrics()));
+                tempButton.setText("");
+                tempButton.setVisibility(View.INVISIBLE);
+                tempButton.setEnabled(false);
+            }
+
+
+            if(mapNumber==ONE) {
+                buttonValue[0] = "San Liboa Hotel";
+                buttonXCoordinates[0] = (float) 35.3708609272;
+                buttonYCoordinates[0] = (float) 46.2222222222;
+                buttonValue[1] = "Hospital Miguel Bombarda";
+                buttonXCoordinates[1] = (float) 65.1927152318;
+                buttonYCoordinates[1] = (float) 37.9;
+                buttonValue[2] = "Parque Eduardo VII";
+                buttonXCoordinates[2] = (float) 16.7026490066;
+                buttonYCoordinates[2] = (float) 50.6388888889;
+                buttonValue[3] = "Subway - Parque (Blue)";
+                buttonXCoordinates[3] = (float) 26.7993377483;
+                buttonYCoordinates[3] = (float) 60.4055555555;
+                buttonValue[4] = "Subway - Picoas";
+                buttonXCoordinates[4] = (float) 44.9529801325;
+                buttonYCoordinates[4] = (float) 62.6333333333;
+                buttonValue[5] = "Subway - Avenida";
+                buttonXCoordinates[5] = (float) 47.6880794702;
+                buttonYCoordinates[5] = (float) 3.76666666667;
+                buttonValue[6] = "Subway - Rato";
+                buttonXCoordinates[6] = (float) 9.58675496688;
+                buttonYCoordinates[6] = (float) 6.40555555557;
+                buttonValue[7] = "Subway - Marques de Pombal";
+                buttonXCoordinates[7] = (float) 24.9079470199;
+                buttonYCoordinates[7] = (float) 32.9666666666;
+                buttonCount = 8;
+            }
+            else if(mapNumber==TWO) {
+                buttonValue[0] = "San Liboa Hotel";
+                buttonXCoordinates[0] = (float) 49.850877193;
+                buttonYCoordinates[0] = (float) 35.1627906977;
+                buttonValue[1] = "Subway - Marques de Pombal";
+                buttonXCoordinates[1] = (float) 32.9921052632;
+                buttonYCoordinates[1] = (float) 11.7418604651;
+                buttonValue[2] = "Parque Eduardo VII";
+                buttonXCoordinates[2] = (float) 20.1236842105;
+                buttonYCoordinates[2] = (float) 43.6337209303;
+                buttonValue[3] = "Subway - Parque (Blue)";
+                buttonXCoordinates[3] = (float) 35.4973684211;
+                buttonYCoordinates[3] = (float) 61.9430232558;
+                buttonValue[4] = "Subway - Picoas";
+                buttonXCoordinates[4] = (float) 65.5429824561;
+                buttonYCoordinates[4] = (float) 65.2069767442;
+                buttonCount = 5;
+            }
+            else if(mapNumber==THREE) {
+                buttonValue[0] = "5th and Aiken";
+                buttonXCoordinates[0] = (float) 24.5;
+                buttonYCoordinates[0] = (float) 4.7;
+                buttonValue[1] = "5th and Negley";
+                buttonXCoordinates[1] = (float) 56.1;
+                buttonYCoordinates[1] = (float) 18.1;
+                buttonValue[2] = "Walnut and Aiken";
+                buttonXCoordinates[2] = (float) 15.7;
+                buttonYCoordinates[2] = (float) 25.6;
+                buttonValue[3] = "Walnut and Negley";
+                buttonXCoordinates[3] = (float) 46.9;
+                buttonYCoordinates[3] = (float) 38.9;
+                buttonValue[4] = "Ellsworth and Aiken";
+                buttonXCoordinates[4] = (float) 7.5;
+                buttonYCoordinates[4] = (float) 45.3;
+                buttonValue[5] = "Ellsworth and Negley";
+                buttonXCoordinates[5] = (float) 35.9;
+                buttonYCoordinates[5] = (float) 63.9;
+                buttonCount = 6;
+            }
+            else{
+                buttonCount=0;
+            }
         }
 
         @Override
         protected String doInBackground(Void... voids) {
+
+            /*
             //This code calls kettle and gets the file for Interested Places
             buttonCount = 0;
             Thread buttonSetupThread = new Thread(new Runnable() {
@@ -453,6 +452,7 @@ public class MapsActivity extends FragmentActivity implements OnInitListener {
                         String line;
                         String[] parts = new String[3];
                         int iterator;
+
 
                         //Read the line and loop only if a line is present.
                         for (iterator = 0; (line = br.readLine()) != null ; iterator++) {
@@ -484,6 +484,7 @@ public class MapsActivity extends FragmentActivity implements OnInitListener {
                 }
             });
             buttonSetupThread.start();
+            */
             return null;
         }
 
@@ -494,13 +495,13 @@ public class MapsActivity extends FragmentActivity implements OnInitListener {
                     buttonXCoordinates[i] = (buttonXCoordinates[i] / 70) * 320;
                     buttonYCoordinates[i] = (buttonYCoordinates[i] / 70) * 320;
                     tempButton.setX((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, buttonXCoordinates[i], getResources().getDisplayMetrics()));
-                    tempButton.setY((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, -buttonYCoordinates[i], getResources().getDisplayMetrics()));
+                    tempButton.setY((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 340 - buttonYCoordinates[i], getResources().getDisplayMetrics()));
                     tempButton.setText(buttonValue[i]);
                     tempButton.setTextSize(ZERO);
                     tempButton.setVisibility(View.VISIBLE);
                     tempButton.setEnabled(true);
                     //Comment the background color to see the buttons and make changes to their position
-                    tempButton.setBackgroundColor(Color.TRANSPARENT);
+                    //tempButton.setBackgroundColor(Color.TRANSPARENT);
                     tempButton.setOnClickListener(buttonHandler);
                     Log.e("Name: ", "" + buttonValue[i]);
                     Log.e("X Coordinate: ", String.valueOf(buttonXCoordinates[i]));
@@ -511,7 +512,10 @@ public class MapsActivity extends FragmentActivity implements OnInitListener {
                 {
                     Log.e("Number of buttons", String.valueOf(buttonCount));
                 }
-                Log.e("Places count exceeds", "Interested Places count exceeds number of buttons present in screen");
+                else
+                {
+                    Log.e("Places count exceeds", "Interested Places count exceeds number of buttons present in screen");
+                }
             }
         }
     }
@@ -535,9 +539,9 @@ public class MapsActivity extends FragmentActivity implements OnInitListener {
             longitude=longitudeFromServerDouble;
             float zoomFromServerFloat = Float.parseFloat(zoomFromFile);
             zoom=zoomFromServerFloat;
-            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(latitudeFromServerDouble, longitudeFromServerDouble), zoomFromServerFloat));
+            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(latitude, longitude), zoom));
         }catch (NumberFormatException e) {
-            System.err.println("illegal input");
+            System.err.println("Illegal Latitude or Longitude Value ");
         }
     }
 
@@ -641,7 +645,7 @@ public class MapsActivity extends FragmentActivity implements OnInitListener {
 
         //check for successful instantiation
         if (initStatus == TextToSpeech.SUCCESS) {
-            if(tt1.isLanguageAvailable(Locale.US)==TextToSpeech.LANG_AVAILABLE)
+            if (tt1.isLanguageAvailable(Locale.US) ==TextToSpeech.LANG_AVAILABLE)
                 tt1.setLanguage(Locale.US);
         }
         else if (initStatus == TextToSpeech.ERROR) {
@@ -673,12 +677,11 @@ public class MapsActivity extends FragmentActivity implements OnInitListener {
             // Check if we were successful in obtaining the map.
             if (mMap != null) {
                 setUpMap();
-            }
-        }
+    }
+}
     }
 
     private void setUpMap() {
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(-79.9425528, 40.4424925), 14.0f));
     }
-
 }

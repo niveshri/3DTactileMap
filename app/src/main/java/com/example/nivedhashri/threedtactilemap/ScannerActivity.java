@@ -27,7 +27,7 @@ public class ScannerActivity extends ActionBarActivity {
     private android.hardware.Camera mCamera;
     private CameraActivity mPreview;
     private Handler autoFocusHandler;
-     public static String scanResult;
+    public static String scanResult;
 
     private Button scanButton;
     private ImageScanner scanner;
